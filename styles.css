@@ -1,0 +1,38 @@
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: #f0f0f0;
+}
+
+#slider {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+}
+
+.page-wrapper { 
+  height: 85vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.content-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+}
+
+#controls {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  height: 70%;
+}
+
+#side-canvas {
+  display: none;
+}
