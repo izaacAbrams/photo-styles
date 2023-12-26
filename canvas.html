@@ -8,26 +8,14 @@
 
   <body>
     <div class="page-wrapper">
-      <div class="preset-title">Preset: <input type="text" /></div>
+      <div class="preset-title">Preset: <input type="text" id="preset-name"/></div>
       <div class="content-wrapper">
         <div id="controls">
           <h3>Canvas Filters:</h3>
           <div class="filter-wrapper">
-            Blur:
+            Brightness:
             <input
-              id="blur"
-              type="range"
-              min="0"
-              max="30"
-              step="0.05"
-              value="0"
-            />
-          </div>
-
-          <div class="filter-wrapper">
-            Contrast:
-            <input
-              id="contrast"
+              id="brightness"
               type="range"
               min="-50"
               max="50"
@@ -49,9 +37,9 @@
           </div>
 
           <div class="filter-wrapper">
-            Brightness:
+            Contrast:
             <input
-              id="brightness"
+              id="contrast"
               type="range"
               min="-50"
               max="50"
@@ -61,7 +49,7 @@
           </div>
 
           <div class="filter-wrapper">
-            Tint:
+            Hue:
             <input
               id="hue"
               type="range"
@@ -73,7 +61,7 @@
           </div>
 
           <div class="filter-wrapper">
-            Highlight:
+            Highlights:
             <input
               id="highlight"
               type="range"
@@ -97,7 +85,7 @@
           </div>
 
           <div class="filter-wrapper">
-            Warmth:
+            Color temperature:
             <input
               id="temperature"
               type="range"

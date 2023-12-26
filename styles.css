@@ -2,7 +2,9 @@ body {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  background-color: #f0f0f0;
+  background-color: #fefefe;
+  font-family: sans-serif;
+  font-size: 16px;
 }
 
 #slider {
@@ -24,6 +26,8 @@ body {
   align-items: center;
   justify-content: center;
   width: 100vw;
+  padding-right: 10%;
+  margin: 20px;
 }
 
 #controls {
@@ -35,4 +39,44 @@ body {
 
 #side-canvas {
   display: none;
+}
+
+#export-button {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 16px;
+  border: none;
+  background: #ff7900;
+  color: white;
+  margin: 10px;
+
+  &:hover {
+    cursor: pointer;
+    background: #de6800;
+  }
+}
+
+#reset-button {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 16px;
+  border: none;
+  background: #e1e1e1;
+  margin: 10px;
+
+  &:hover {
+    cursor: pointer;
+    background: #d3d3d3;
+  }
+}
+
+.preset-title {
+  margin: 20px;
+}
+
+#preset-name {
+  border-radius: 6px;
+  border: 1px solid black;
+  font-size: 24px;
+  padding: 5px 10px;
 }

@@ -1,18 +1,39 @@
 const image = new Image();
 image.src =
-  "https://static.vecteezy.work/system/resources/previews/007/842/943/non_2x/one-clean-soap-bubble-flying-in-the-air-blue-sky-photo.jpg";
+  "https://static.vecteezy.work/system/resources/thumbnails/007/842/943/large/one-clean-soap-bubble-flying-in-the-air-blue-sky-photo.jpg";
 image.crossOrigin = "Anonymous";
 
+const ORIGINAL_WIDTH = 85.333;
+const ORIGINAL_HEIGHT = 72;
+const UPSCALED_MULTIPLIER = 7;
+const OFFSET_X = 7.1428;
+const OFFSET_Y = 2.8571;
+
 const handleFilter = (canvas, filters) => {
+  // Start of canvas filters (Not currently in use)
   const ctx = canvas.getContext("2d");
-  const filterValues = Object.values(filters).filter(
-    (val) => typeof val !== "number"
+  // const filterValues = Object.values(filters).filter(
+  //   (val) => typeof val !== "number"
+  // );
+  // const filterString = filterValues.join(" ");
+
+  // ctx.filter = filterString;
+  const drawHeight = canvas.height * 1.1;
+  const drawWidth = image.width * (drawHeight / image.height);
+  const newX = (canvas.width - drawWidth) / 2;
+  const newY = (canvas.height - drawHeight) / 2;
+
+  ctx.drawImage(
+    image,
+    newX + OFFSET_X * UPSCALED_MULTIPLIER,
+    newY + OFFSET_Y * UPSCALED_MULTIPLIER,
+    drawWidth,
+    drawHeight
   );
-  const filterString = filterValues.join(" ");
 
-  ctx.filter = filterString;
-  ctx.drawImage(image, 0, 0, 750, 500);
+  // End of canvas filters
 
+  // Start of WebGL filters
   const glCanvas = document.getElementById("side-canvas");
   if (!glCanvas) return;
   const gl =
@@ -130,6 +151,7 @@ void main() {
 }
 `;
 
+  // Pretty universal function for compiling shaders
   function compileShader(source, type) {
     const shader = gl.createShader(type);
     if (!shader) return null;
@@ -151,6 +173,7 @@ void main() {
 
   const shaderProgram = gl.createProgram();
   if (!shaderProgram || !vertexShader || !fragmentShader) return;
+
   gl.attachShader(shaderProgram, vertexShader);
   gl.attachShader(shaderProgram, fragmentShader);
   gl.linkProgram(shaderProgram);
@@ -171,7 +194,8 @@ void main() {
   );
 
   const positionLocation = gl.getAttribLocation(shaderProgram, "a_position");
-  // Get all var positions
+
+  // Get all var positions that we use for passing values
   const highlightLocation = gl.getUniformLocation(shaderProgram, "u_highlight");
   const multiplierLocation = gl.getUniformLocation(
     shaderProgram,
@@ -195,13 +219,12 @@ void main() {
     "u_temperature"
   );
   const hueLocation = gl.getUniformLocation(shaderProgram, "u_hue");
-  const blurLocation = gl.getUniformLocation(shaderProgram, "u_blurRadius");
   const imageLocation = gl.getUniformLocation(shaderProgram, "u_image");
 
   // Create texture
   const texture = gl.createTexture();
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-  // Use image as texture
+  // Start for using image as texture
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -213,8 +236,9 @@ void main() {
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
   gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
   gl.uniform1i(imageLocation, 0);
+  // End for image as texture
 
-  // Adjust the brightness as needed
+  // Start for applying filters
   if (filters.highlight !== 0) {
     gl.uniform1f(highlightLocation, filters.highlight);
   }
@@ -260,17 +284,13 @@ void main() {
   if (filters.temperature !== 0) {
     gl.uniform1f(temperatureLocation, filters.temperature / 100);
   }
-
-  // Apply Gaussian blur filter
-  if (filters.blur !== 0) {
-    gl.uniform1f(blurLocation, filters.blur);
-  }
+  // End for applying filters
 
   gl.clear(gl.COLOR_BUFFER_BIT); // Clear the canvas
-
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-
   ctx.drawImage(glCanvas, 0, 0);
+
+  // End of WebGL filters
 };
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -278,26 +298,63 @@ document.addEventListener("DOMContentLoaded", function () {
   const canvas = document.getElementById("main-canvas");
   const glCanvas = document.getElementById("side-canvas");
   const downloadBtn = document.getElementById("export-button");
+  const resetBtn = document.getElementById("reset-button");
+  const presetInput = document.getElementById("preset-name");
+  const upscaledWidth = ORIGINAL_WIDTH * UPSCALED_MULTIPLIER;
+  const upscaledHeight = ORIGINAL_HEIGHT * UPSCALED_MULTIPLIER;
 
   const ctx = canvas?.getContext("2d");
-  canvas.width = 750;
-  canvas.height = 500;
-  glCanvas.width = 750;
-  glCanvas.height = 500;
+  canvas.width = upscaledWidth;
+  canvas.height = upscaledHeight;
+  glCanvas.width = upscaledWidth;
+  glCanvas.height = upscaledHeight;
 
   image.onload = () => {
-    ctx?.drawImage(image, 0, 0, 750, 500);
+    const drawHeight = canvas.height * 1.1;
+    const drawWidth = image.width * (drawHeight / image.height);
+    const newX = (canvas.width - drawWidth) / 2;
+    const newY = (canvas.height - drawHeight) / 2;
+
+    ctx?.drawImage(
+      image,
+      newX + OFFSET_X * UPSCALED_MULTIPLIER,
+      newY + OFFSET_Y * UPSCALED_MULTIPLIER,
+      drawWidth,
+      drawHeight
+    );
   };
 
   downloadBtn.onclick = () => {
+    if (presetInput.value === "") {
+      alert('Please enter a preset name');
+      return
+    }
+    const title = presetInput.value
     const thumbnailLink = document.createElement("a");
     const settingsLink = document.createElement("a");
-    thumbnailLink.download = "image.png";
-    thumbnailLink.href = canvas.toDataURL();
+    const resizedCanvas = document.createElement("canvas");
+    const resizedCtx = resizedCanvas.getContext("2d");
+    resizedCanvas.width = ORIGINAL_WIDTH * 1.5;
+    resizedCanvas.height = ORIGINAL_HEIGHT * 1.5;
+    resizedCtx.drawImage(
+      canvas,
+      0,
+      0,
+      canvas.width,
+      canvas.height,
+      0,
+      0,
+      ORIGINAL_WIDTH * 1.5,
+      ORIGINAL_HEIGHT * 1.5
+    );
+    thumbnailLink.download = `${title}.png`;
+
+
+    thumbnailLink.href = resizedCanvas.toDataURL('image/jpeg');
     const settingsUrl = `data:text/plain;charset=utf-8,${encodeURIComponent(
       JSON.stringify(filtersObj)
     )}`;
-    settingsLink.download = "settings.json";
+    settingsLink.download = `${title}-settings.json`;
     settingsLink.href = settingsUrl;
 
     thumbnailLink.click();
@@ -305,7 +362,6 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 
   const sliders = [
-    "blur",
     "contrast",
     "brightness",
     "saturation",
@@ -315,7 +371,6 @@ document.addEventListener("DOMContentLoaded", function () {
     "temperature",
   ];
   const filtersObj = {
-    blur: "",
     contrast: "",
     brightness: "",
     saturation: "",
@@ -331,16 +386,34 @@ document.addEventListener("DOMContentLoaded", function () {
     return filtersObj;
   };
 
+  resetBtn.onclick = () => {
+    const defaultFilters = {
+      contrast: 0,
+      brightness: 0,
+      saturation: 0,
+      hue: 0,
+      highlight: 255,
+      shadows: 0,
+      temperature: 0,
+    };
+    sliders.forEach((slider) => {
+      const sliderElement = document.getElementById(slider);
+      if (!sliderElement) return;
+      sliderElement.value = defaultFilters[slider];
+      updateFilter(slider, parseFloat(defaultFilters[slider]));
+    });
+
+    handleFilter(canvas, defaultFilters);
+  }
+
   sliders.forEach(function (attr) {
     const slider = document.getElementById(attr);
     if (!slider) return;
     updateFilter(attr, parseFloat(slider.value));
 
     function update() {
-      // console.time(attr);
       const newFilters = updateFilter(attr, parseFloat(slider.value));
       handleFilter(canvas, newFilters);
-      // console.timeEnd(attr);
     }
 
     slider.oninput = update;
