@@ -84,21 +84,6 @@ vec3 adjustLevels(vec4 color, float inBlack, float inGamma, float inWhite, float
   return adjustedColor.rgb;
 }
 
-vec4 brightnessContrast(vec4 inColor, float brightness, float contrast)
-{
-  return vec4((inColor.rgb - 0.5) * contrast + 0.5 + brightness, inColor.a);
-}
-
-vec3 adjustHighlight(vec3 color, float highlight) {
-  float luminance = dot(color, vec3(0.2126, 0.7152, 0.0722));
-  return color + vec3(highlight) * (1.0 - luminance);
-}
-
-vec3 adjustShadow(vec3 color, float shadow) {
-  float luminance = dot(color, vec3(0.2126, 0.7152, 0.0722));
-  return color - vec3(shadow) * luminance;
-}
-
 vec3 adjustTemperature(vec3 color, float temperature) {
   // Scale the temperature value to a usable range
   float scaledTemperature = temperature;
@@ -142,7 +127,6 @@ void main() {
   color.rgb = adjustHue(color.rgb, u_hue);
   color.rgb = adjustContrast(color.rgb, u_contrast);
   color.rgb = adjustSaturation(color.rgb, u_saturation);
-
   color.rgb = adjustTemperature(color.rgb, u_temperature);
   color.rgb = adjustBrightness(color, u_brightnessMatrix, u_brightness);
   color.rgb = adjustLevels(color, 0.0, 1.0, 255.0, u_darknessMultiplier, u_highlight);
@@ -249,6 +233,7 @@ void main() {
     gl.uniform1f(contrastLocation, filters.contrast / 100);
   }
 
+  // Brightness was a bit different, needed to use a matrix to give an overlay of white to the image rather than just lightening the pixels
   const lighteningColorMatrix = [
     1,
     0,
