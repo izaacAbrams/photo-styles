@@ -56,6 +56,10 @@ body {
   }
 }
 
+#image-selection {
+  margin-left: 20px;
+}
+
 #reset-button {
   padding: 10px 20px;
   border-radius: 6px;

@@ -2,7 +2,11 @@ const image = new Image();
 image.src =
   "https://static.vecteezy.work/system/resources/thumbnails/007/842/943/large/one-clean-soap-bubble-flying-in-the-air-blue-sky-photo.jpg";
 image.crossOrigin = "Anonymous";
-
+const images = {
+  1: "https://static.vecteezy.work/system/resources/thumbnails/007/842/943/large/one-clean-soap-bubble-flying-in-the-air-blue-sky-photo.jpg",
+  2: "https://static.vecteezy.com/system/resources/previews/015/268/125/large_2x/photographer-tourist-traveler-standing-on-green-top-on-mountain-holding-in-hands-digital-camera-hiker-takinggraphy-girl-enjoy-nature-panoramic-landscape-in-trip-free-photo.jpg",
+  3: "https://static.vecteezy.com/system/resources/previews/014/886/504/large_2x/red-and-blue-sky-and-clouds-abstract-background-free-photo.jpg",
+};
 const ORIGINAL_WIDTH = 85.333;
 const ORIGINAL_HEIGHT = 72;
 const UPSCALED_MULTIPLIER = 7;
@@ -12,18 +16,23 @@ const OFFSET_Y = 2.8571;
 const handleFilter = (canvas, filters) => {
   // Start of canvas filters (Not currently in use)
   const ctx = canvas.getContext("2d");
-  // const filterValues = Object.values(filters).filter(
-  //   (val) => typeof val !== "number"
-  // );
-  // const filterString = filterValues.join(" ");
 
-  // ctx.filter = filterString;
-  const drawHeight = canvas.height * 1.1;
+  // This is to resize the image to fit correctly when we add it as a texture. Only needed because the canvas size is different than the image
+  // When I pass image directly to texture i get an INVALID_VALUE error, invalid image, so may need to investigate
+  // Ideally we just pass image and then draw it back to the original canvas the correct size, which saves an extra ctx.drawImage call
+  const newCanvas = document.createElement("canvas");
+  const newCtx = newCanvas.getContext("2d");
+  const upscaledWidth = ORIGINAL_WIDTH * UPSCALED_MULTIPLIER;
+  const upscaledHeight = ORIGINAL_HEIGHT * UPSCALED_MULTIPLIER;
+  newCanvas.width = upscaledWidth;
+  newCanvas.height = upscaledHeight;
+
+  const drawHeight = newCanvas.height * 1.1;
   const drawWidth = image.width * (drawHeight / image.height);
-  const newX = (canvas.width - drawWidth) / 2;
-  const newY = (canvas.height - drawHeight) / 2;
+  const newX = (newCanvas.width - drawWidth) / 2;
+  const newY = (newCanvas.height - drawHeight) / 2;
 
-  ctx.drawImage(
+  newCtx.drawImage(
     image,
     newX + OFFSET_X * UPSCALED_MULTIPLIER,
     newY + OFFSET_Y * UPSCALED_MULTIPLIER,
@@ -210,7 +219,14 @@ void main() {
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
   // Start for using image as texture
   gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
+  gl.texImage2D(
+    gl.TEXTURE_2D,
+    0,
+    gl.RGBA,
+    gl.RGBA,
+    gl.UNSIGNED_BYTE,
+    newCanvas
+  );
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -273,6 +289,8 @@ void main() {
 
   gl.clear(gl.COLOR_BUFFER_BIT); // Clear the canvas
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  gl.finish();
+
   ctx.drawImage(glCanvas, 0, 0);
 
   // End of WebGL filters
@@ -285,6 +303,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const downloadBtn = document.getElementById("export-button");
   const resetBtn = document.getElementById("reset-button");
   const presetInput = document.getElementById("preset-name");
+  const imageOptions = document.querySelectorAll(".image-option");
   const upscaledWidth = ORIGINAL_WIDTH * UPSCALED_MULTIPLIER;
   const upscaledHeight = ORIGINAL_HEIGHT * UPSCALED_MULTIPLIER;
 
@@ -294,27 +313,12 @@ document.addEventListener("DOMContentLoaded", function () {
   glCanvas.width = upscaledWidth;
   glCanvas.height = upscaledHeight;
 
-  image.onload = () => {
-    const drawHeight = canvas.height * 1.1;
-    const drawWidth = image.width * (drawHeight / image.height);
-    const newX = (canvas.width - drawWidth) / 2;
-    const newY = (canvas.height - drawHeight) / 2;
-
-    ctx?.drawImage(
-      image,
-      newX + OFFSET_X * UPSCALED_MULTIPLIER,
-      newY + OFFSET_Y * UPSCALED_MULTIPLIER,
-      drawWidth,
-      drawHeight
-    );
-  };
-
   downloadBtn.onclick = () => {
     if (presetInput.value === "") {
-      alert('Please enter a preset name');
-      return
+      alert("Please enter a preset name");
+      return;
     }
-    const title = presetInput.value
+    const title = presetInput.value;
     const thumbnailLink = document.createElement("a");
     const settingsLink = document.createElement("a");
     const resizedCanvas = document.createElement("canvas");
@@ -334,8 +338,7 @@ document.addEventListener("DOMContentLoaded", function () {
     );
     thumbnailLink.download = `${title}.png`;
 
-
-    thumbnailLink.href = resizedCanvas.toDataURL('image/jpeg');
+    thumbnailLink.href = resizedCanvas.toDataURL("image/jpeg");
     const settingsUrl = `data:text/plain;charset=utf-8,${encodeURIComponent(
       JSON.stringify(filtersObj)
     )}`;
@@ -371,6 +374,36 @@ document.addEventListener("DOMContentLoaded", function () {
     return filtersObj;
   };
 
+  image.onload = () => {
+    const drawHeight = canvas.height * 1.1;
+    const drawWidth = image.width * (drawHeight / image.height);
+    const newX = (canvas.width - drawWidth) / 2;
+    const newY = (canvas.height - drawHeight) / 2;
+
+    ctx?.drawImage(
+      image,
+      newX + OFFSET_X * UPSCALED_MULTIPLIER,
+      newY + OFFSET_Y * UPSCALED_MULTIPLIER,
+      drawWidth,
+      drawHeight
+    );
+
+    handleFilter(canvas, filtersObj);
+  };
+
+  imageOptions.forEach((option) => {
+    option.onclick = () => {
+      const imageNumber = option.id.replace("image-", "");
+      image.src = images[imageNumber];
+
+      sliders.forEach((slider) => {
+        const sliderElement = document.getElementById(slider);
+        if (!sliderElement) return;
+      });
+      handleFilter(canvas, filtersObj);
+    };
+  });
+
   resetBtn.onclick = () => {
     const defaultFilters = {
       contrast: 0,
@@ -389,7 +422,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     handleFilter(canvas, defaultFilters);
-  }
+  };
 
   sliders.forEach(function (attr) {
     const slider = document.getElementById(attr);
